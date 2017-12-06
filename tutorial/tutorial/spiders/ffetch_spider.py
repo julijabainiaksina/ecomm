@@ -1,5 +1,6 @@
-import scrapy
-import re
+import scrapy, pymongo, datetime
+from pymongo import MongoClient
+from bson import json_util
 
 class QuotesSpider(scrapy.Spider):
     name = "ffetch"
@@ -17,38 +18,80 @@ class QuotesSpider(scrapy.Spider):
         with open(filename, 'wb') as f:
             f.write(response.body)
 
-        for brands in response.css('div.designers-list-item'):
-            yield {
-                'Designer Brands': brands.css('ul.list-regular a.open-persistent-tooltip::text').extract_first(),
-            }
-
-        next_page = response.css('ul.list-regular a.open-persistent-tooltip::attr(href)').extract()
+        next_page = response.css('ul.list-regular '
+                                 'a.open-persistent-tooltip::attr(href)').extract()
         counter = 1
-        for links in next_page:
-            if links is not None and counter == 1:
-                next_page_url = response.urljoin(links)
-                counter=counter + 1
-                yield scrapy.Request(next_page_url, self.parse_products)
-
-    def parse_products(self, response):
-        for prd in response.css('article.listing-item a.listing-item-content'):
-            yield {
-                'Product Name': prd.css('p.listing-item-content-description::text').extract(),
-            }
-
-        next_page = response.css('article.listing-item a.listing-item-content::attr(href)').extract()
         for links in next_page:
             if links is not None:
                 next_page_url = response.urljoin(links)
-                yield scrapy.Request(next_page_url, self.parse_prd_details)
+                counter = counter + 1
+                if counter == 4:
+                    try:
+                        yield scrapy.Request(next_page_url, self.parse_products)
+
+                    except (RuntimeError, TypeError, NameError):
+                        pass
+
+
+    def parse_products(self, response):
+        yield {
+            'Designer Brand': response.css('h1::text').extract_first(),
+            'Number of Prds on sale': response.css('div.listing-bottomBanner '
+                                                   'span.underline::text').extract(),
+        }
+        sales_page = response.css('div.listing-bottomBanner '
+                                  'a::attr(href)').extract()
+
+        for links in sales_page:
+            if links is not None:
+                sales_page_url = response.urljoin(links)
+                try:
+                    yield scrapy.Request(sales_page_url, self.parse_sale_prd_details)
+                except (RuntimeError, TypeError, NameError):
+                    pass
+
+
+        next_page = response.css('article.listing-item '
+                                 'a.listing-item-content::attr(href)').extract()
+        print('LOL')
+        print(sales_page)
+        # for links in next_page:
+        #     if links is not None:
+        #         next_page_url = response.urljoin(links)
+        #         try:
+        #             yield scrapy.Request(next_page_url, self.parse_prd_details)
+        #         except (RuntimeError, TypeError, NameError):
+        #             pass
 
     def parse_prd_details(self, response):
         yield {
-            'Designer Brand': response.css('h1.detail-brand a::text').extract_first(),
-            'Prd Name': response.css('h1.detail-brand span.heading-regular::text').extract(),
-            'Prd Price': response.css('div.js-price-without-sale span.listing-price::text').extract_first()[1:],
-            'Size': response.css('li.js-product-selecSize-dropdown span.productDetailModule-dropdown-numberItems::text')
-                .extract(),
+            'Designer Brand': response.css('h1.detail-brand '
+                                           'a::text').extract_first(),
+            'Prd Name': response.css('h1.detail-brand '
+                                     'span.heading-regular::text').extract(),
+            'Prd Price': response.css('div.js-price-without-sale '
+                                      'span.listing-price::text').extract_first()[1:],
+            'Size': response.css('ul.productDetailModule-selectSize '
+                                 'div.dropdown-label-option '
+                                 'span.productDetailModule-dropdown-numberItems::text').extract_first(),
         }
 
+    def parse_sale_prd_details(self, response):
+        yield {
+            'Designer Brand': response.css('h1.detail-brand.detail-name '
+                                           'a.generic::text').extract_first(),
+            'Prd Name': response.css('h1.detail-brand.detail-name '
+                                     'span.heading-regular::text').extract(),
+            'Prd sale Price': response.css('div.pdp-price'
+                                      'span.listing-sale.js-price::text').extract_first(),
+            'Discount': response.css('div.pdp-price '
+                                     'div.js-price-on-sale'
+                                     'span.discountprice::text').extract_first(),
+            'Size': response.css('div.productContainerModule '
+                                 'ul.productDetailModule-selectSize '
+                                 'li.js-product-selecSize-dropdown '
+                                 'span.productDetailModule-dropdown-numberItems::text').extract(),
+        }
 
+    # client_connection = MongoClient()
+    # data = json_util.loads()
