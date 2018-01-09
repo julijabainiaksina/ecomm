@@ -2,10 +2,11 @@
 #
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
-import scrapy, pymongo, datetime
-from pymongo import MongoClient
-from bson import json_util
+import re
+import scrapy, datetime
+from scrapy import log
 from tutorial.items import FarfetchProductItem, FarfetchDesignerItem
+
 
 class FarfetchSpider(scrapy.Spider):
     name = "ffetch"
@@ -20,7 +21,7 @@ class FarfetchSpider(scrapy.Spider):
 
 # Begin with designers and fetch url navigating to each designer
     def parse_designers(self, response):
-    # All designer brands
+        # All designer brands
         item = FarfetchDesignerItem()
         time = datetime.datetime.today()
 
@@ -37,35 +38,26 @@ class FarfetchSpider(scrapy.Spider):
                 next_page_url = response.urljoin(links)
                 try:
                     yield scrapy.Request(next_page_url, self.check_sales)
-
                 except (RuntimeError, TypeError, NameError):
                     pass
 
 
 # Get link for each product and call prd_detail func to scrape
-    def parse_prd(self, response):
-        next_page = response.css('article.listing-item '
-                                 'a.listing-item-content::attr(href)').extract()
-        for links in next_page:
-            if links is not None:
-                next_page_url = response.urljoin(links)
-                try:
-                    yield scrapy.Request(next_page_url, self.parse_prd_details)
-                except (RuntimeError, TypeError, NameError):
-                    pass
+#     def parse_prd(self, response):
+#         next_page = response.css('article.listing-item '
+#                                  'a.listing-item-content::attr(href)').extract()
+#         for links in next_page:
+#             if links is not None:
+#                 next_page_url = response.urljoin(links)
+#                 try:
+#                     yield scrapy.Request(next_page_url, self.parse_prd_details)
+#                 except (RuntimeError, TypeError, NameError):
+#                     pass
 
 
 # Check if this brand has any products on sale, if so, goes into the sale page and scrape, otherwise scrape
     def check_sales(self, response):
-        sales_page = response.css('div.listing-bottomBanner '
-                                  'a::attr(href)').extract_first()
-        # Scrape the sales page if it exist
-        if sales_page is not None:
-            sales_page_url = response.urljoin(sales_page)
-            yield scrapy.Request(sales_page_url, self.parse_prd)
-
-
-    # Scrape original product page
+        # Scrape original product page
         next_page = response.css('article.listing-item '
                                  'a.listing-item-content::attr(href)').extract()
         for links in next_page:
@@ -75,15 +67,22 @@ class FarfetchSpider(scrapy.Spider):
                     yield scrapy.Request(next_page_url, self.parse_prd_details)
                 except (RuntimeError, TypeError, NameError):
                     pass
-
+        # Check on sale products
+        # sales_page = response.css('div.listing-bottomBanner '
+        #                           'a::attr(href)').extract_first()
+        # if sales_page is not None:
+        #     sales_page_url = response.urljoin(sales_page)
+        #     yield scrapy.Request(sales_page_url, self.parse_prd)
 
     def parse_prd_details(self, response):
         item = FarfetchProductItem()
         time = datetime.datetime.today()
+        name = response.css('h1.detail-brand '
+                            'a::text').extract_first().strip()
 
         item['date'] = time,
-        item['designer_name'] = response.css('h1.detail-brand '
-                                             'a::text').extract_first().strip(),
+        item['designer_original_name'] = name,
+        item['designer_uni_name'] = re.sub(r'[^\w]', '', name).lower(),
         item['product_name'] = response.css('h1.detail-brand '
                                             'span.heading-regular::text').extract_first().strip(),
         item['product_Price'] = float(response.css('script::text').re(r'unitSalePrice":(.*?)\,"unit')[0]),
@@ -93,7 +92,7 @@ class FarfetchSpider(scrapy.Spider):
         item['product_availability'] = response.css('div.js-detail-price '
                                                     'span.size-lowStock::text').extract_first(),
         item['product_description'] = response.css('div.accordion.product-detail '
-                                                    'p::text').extract_first().strip(),
+                                                   'p::text').extract_first().strip(),
         item['designer_style_id'] = response.css('script::text').re(r'designerStyleId":(.*?)\"'),
         item['ffetch_id'] = response.css('div.accordion.product-detail '
                                          'p.item-id '

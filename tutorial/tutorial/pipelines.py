@@ -10,10 +10,6 @@ from scrapy.exceptions import DropItem
 from scrapy import log
 
 
-class TutorialPipeline(object):
-    def process_item(self, item, spider):
-        return item
-
 class MongoPipeline(object):
 
     def __init__(self):
@@ -24,7 +20,6 @@ class MongoPipeline(object):
         db = connection[settings['MONGODB_DB']]
         self.collection = db[settings['MONGODB_COLLECTION']]
 
-
     def process_item(self, item, spider):
         valid = True
         for data in item:
@@ -33,7 +28,7 @@ class MongoPipeline(object):
                 raise DropItem("Missing {0}!".format(data))
         if valid:
             self.collection.insert(dict(item))
-            log.msg("Product details added to MongoDB database",
+            log.msg("Product Details Adding to MongoDB Database",
                     level=log.DEBUG, spider=spider)
         return item
 

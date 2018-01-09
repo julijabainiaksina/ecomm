@@ -8,7 +8,9 @@ import scrapy
 
 class FarfetchProductItem(scrapy.Item):
     # define the fields for your item here like:
-    designer_name = scrapy.Field()
+    designer_original_name = scrapy.Field()
+
+    designer_uni_name = scrapy.Field()
 
     product_category = scrapy.Field()
 
