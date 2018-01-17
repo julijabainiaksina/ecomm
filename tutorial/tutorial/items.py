@@ -6,7 +6,8 @@
 # http://doc.scrapy.org/en/latest/topics/items.html
 import scrapy
 
-class FarfetchProductItem(scrapy.Item):
+
+class ECommerceProductItem(scrapy.Item):
     # define the fields for your item here like:
     designer_original_name = scrapy.Field()
 
@@ -36,12 +37,15 @@ class FarfetchProductItem(scrapy.Item):
 
     ffetch_id = scrapy.Field()
 
+    nap_id = scrapy.Field()
+
     product_name = scrapy.Field()
 
     no_product_on_sale = scrapy.Field()
 
+    designer_brands = scrapy.Field()
+
+    date = scrapy.Field()
+
     pass
 
-class FarfetchDesignerItem(scrapy.Item):
-    designer_brands = scrapy.Field()
-    date = scrapy.Field()
