@@ -70,8 +70,8 @@ ITEM_PIPELINES = {
 
 MONGODB_SERVER = "localhost"
 MONGODB_PORT = 27017
-MONGODB_DB = "ffetch"
-MONGODB_COLLECTION = "ffetch_products"
+MONGODB_DB = "nap"
+MONGODB_COLLECTION = "nap_products"
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
 #AUTOTHROTTLE_ENABLED = True
