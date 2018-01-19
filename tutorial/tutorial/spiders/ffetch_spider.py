@@ -29,16 +29,13 @@ class FarfetchSpider(scrapy.Spider):
 
         next_page = response.css('ul.list-regular '
                                  'a.open-persistent-tooltip::attr(href)').extract()
-        i = 1
         for links in next_page:
             if links is not None:
-                if i == 1:
-                    next_page_url = response.urljoin(links)
-                    i += 1
-                    try:
-                        yield scrapy.Request(next_page_url, self.parse_products)
-                    except (RuntimeError, TypeError, NameError):
-                        pass
+                next_page_url = response.urljoin(links)
+                try:
+                    yield scrapy.Request(next_page_url, self.parse_products)
+                except (RuntimeError, TypeError, NameError):
+                    pass
 
         if self.other_urls:
             yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
@@ -48,16 +45,13 @@ class FarfetchSpider(scrapy.Spider):
     def parse_products(self, response):
         next_page = response.css('article.listing-item '
                                  'a.listing-item-content::attr(href)').extract()
-        i = 1
         for links in next_page:
             if links is not None:
-                if i < 5:
-                    next_page_url = response.urljoin(links)
-                    i += 1
-                    try:
-                        yield scrapy.Request(next_page_url, self.parse_prd_details)
-                    except (RuntimeError, TypeError, NameError):
-                        pass
+                next_page_url = response.urljoin(links)
+                try:
+                    yield scrapy.Request(next_page_url, self.parse_prd_details)
+                except (RuntimeError, TypeError, NameError):
+                    pass
 
     def parse_prd_details(self, response):
         item = ECommerceProductItem()

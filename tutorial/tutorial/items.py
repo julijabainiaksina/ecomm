@@ -39,6 +39,8 @@ class ECommerceProductItem(scrapy.Item):
 
     nap_id = scrapy.Field()
 
+    selfridges_id = scrapy.Field()
+
     product_name = scrapy.Field()
 
     no_product_on_sale = scrapy.Field()
