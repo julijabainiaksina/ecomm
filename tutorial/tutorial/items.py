@@ -39,7 +39,7 @@ class ECommerceProductItem(scrapy.Item):
 
     nap_id = scrapy.Field()
 
-    selfridges_id = scrapy.Field()
+    harrods_id = scrapy.Field()
 
     product_name = scrapy.Field()
 

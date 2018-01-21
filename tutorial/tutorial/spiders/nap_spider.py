@@ -7,6 +7,7 @@ from tutorial.items import ECommerceProductItem
 class NetAPorterSpider(scrapy.Spider):
     name = "nap"
     other_urls = 'https://www.net-a-porter.com/Shop/Sale/AZDesigners'
+    handle_httpstatus_all = True
 
     # Define starting urls
     def start_requests(self):
@@ -44,14 +45,26 @@ class NetAPorterSpider(scrapy.Spider):
             if links is not None:
                 next_page_url = response.urljoin(links)
                 try:
-                    yield scrapy.Request(next_page_url, self.parse_products)
+                    yield scrapy.Request(next_page_url, self.parse_prd_pages)
                 except (RuntimeError, TypeError, NameError):
                     pass
 
         if self.other_urls:
             yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
 
-        # Check if this brand has any products on sale, if so, goes into the sale page and scrape, otherwise scrape
+    def parse_prd_pages(self, response):
+        next_page = set(response.css('div.pagination-links '
+                                     'a::attr(href)').extract())
+
+        for links in next_page:
+            if links is not None:
+                next_page_url = response.urljoin(links + "&npp=60&image_view=product&dScroll=0")
+                try:
+                    yield scrapy.Request(next_page_url, self.parse_products)
+                except (RuntimeError, TypeError, NameError):
+                    pass
+
+    # Check if this brand has any products on sale, if so, goes into the sale page and scrape, otherwise scrape
     def parse_products(self, response):
         # Scrape original product page
         next_page = response.css('div.product-image '
