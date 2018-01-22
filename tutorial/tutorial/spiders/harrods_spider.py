@@ -1,6 +1,9 @@
+import datetime
 import re
-import scrapy, datetime
+
+import scrapy
 from scrapy import log
+
 from tutorial.items import ECommerceProductItem
 
 
@@ -35,12 +38,11 @@ class HarrodsSpider(scrapy.Spider):
         next_page = response.css('li.brand-az_list-group '
                                  'ul.brand-az_brands '
                                  'a.brand-az_brand-link::attr(href)').extract()
-
         for links in next_page:
             if links is not None:
                 next_page_url = response.urljoin(links)
                 try:
-                    yield scrapy.Request(next_page_url, self.parse_category)
+                    yield scrapy.Request(next_page_url, self.parse_category, dont_filter=True)
                 except (RuntimeError, TypeError, NameError):
                     pass
 
@@ -48,26 +50,33 @@ class HarrodsSpider(scrapy.Spider):
         pages = response.css('li.hrd-link-list_item '
                              'a::attr(href)').extract()
         next_page = set([x for x in pages if "all-" in x])
-        if next_page or next_page is None:
+        if next_page:
             for links in next_page:
                 if links is not None:
                     next_page_url = response.urljoin(links)
                     try:
-                        yield scrapy.Request(next_page_url, self.parse_prd_pages)
+                        yield scrapy.Request(next_page_url, self.parse_prd_pages, dont_filter=True)
                     except (RuntimeError, TypeError, NameError):
                         pass
+        else:
+            next_page_url = response.urljoin("")
+            yield scrapy.Request(next_page_url, self.parse_prd_pages, dont_filter=True)
 
     def parse_prd_pages(self, response):
-        next_page = set(response.css('div.control_paging-list '
-                                     'a.control_paging-item::attr(href)').extract())
+        next_page_of_this = set(response.css('div.control_paging-list '
+                                             'a.control_paging-item::attr(href)').extract())
 
-        for links in next_page:
-            if links is not None:
-                next_page_url = response.urljoin(links)
-                try:
-                    yield scrapy.Request(next_page_url, self.parse_products)
-                except (RuntimeError, TypeError, NameError):
-                    pass
+        if not next_page_of_this:
+            next_page_url = response.urljoin("")
+            yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
+        else:
+            for links in next_page_of_this:
+                if links is not None:
+                    next_page_url = response.urljoin(links)
+                    try:
+                        yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
+                    except (RuntimeError, TypeError, NameError):
+                        pass
 
 
 # Check if this brand has any products on sale, if so, goes into the sale page and scrape, otherwise scrape
@@ -102,7 +111,7 @@ class HarrodsSpider(scrapy.Spider):
         item['harrods_id'] = response.css('div.buying-controls_prodID::text').extract_first(default='Null'),
         item['product_category'] = response.css('div.product-info_content '
                                                 'ul.product-info_list '
-                                                'a.product-info_item-link::text').extract()[1]
+                                                'a.product-info_item-link::text').extract()
 
         yield item
 
