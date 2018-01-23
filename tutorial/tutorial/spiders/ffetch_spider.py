@@ -1,7 +1,10 @@
+import datetime
 import re
-import scrapy, datetime
-from scrapy import log
+
+import scrapy
+
 from tutorial.items import ECommerceProductItem
+
 
 class FarfetchSpider(scrapy.Spider):
     name = "ffetch"
@@ -45,10 +48,7 @@ class FarfetchSpider(scrapy.Spider):
             url = response.urljoin(page)
             path = url.decode('utf-8')
             next_page_url.append(path)
-
             i += 1
-        print("XXX")
-        print(next_page_url)
         for links in next_page_url:
             if links is not None:
                 try:

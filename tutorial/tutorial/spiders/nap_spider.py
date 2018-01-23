@@ -1,13 +1,15 @@
+import datetime
 import re
-import scrapy, datetime
+
+import scrapy
 from scrapy import log
+
 from tutorial.items import ECommerceProductItem
 
 
 class NetAPorterSpider(scrapy.Spider):
     name = "nap"
     other_urls = 'https://www.net-a-porter.com/Shop/Sale/AZDesigners'
-    handle_httpstatus_all = True
 
     # Define starting urls
     def start_requests(self):
@@ -45,26 +47,30 @@ class NetAPorterSpider(scrapy.Spider):
             if links is not None:
                 next_page_url = response.urljoin(links)
                 try:
-                    yield scrapy.Request(next_page_url, self.parse_prd_pages)
+                    yield scrapy.Request(next_page_url, self.parse_pages)
                 except (RuntimeError, TypeError, NameError):
                     pass
 
         if self.other_urls:
             yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
 
-    def parse_prd_pages(self, response):
-        next_page = set(response.css('div.pagination-links '
-                                     'a::attr(href)').extract())
+    def parse_pages(self, response):
+        next_page_of_this = set(response.css('div.pagination-links '
+                                             'a::attr(href)').extract())
+        if not next_page_of_this:
+            next_page_url = response.urljoin("")
+            yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
+        else:
+            for links in next_page_of_this:
+                if links is not None:
+                    next_page_url = response.urljoin(links)
+                    try:
+                        yield scrapy.Request(next_page_url, self.parse_products)
+                    except (RuntimeError, TypeError, NameError):
+                        pass
 
-        for links in next_page:
-            if links is not None:
-                next_page_url = response.urljoin(links + "&npp=60&image_view=product&dScroll=0")
-                try:
-                    yield scrapy.Request(next_page_url, self.parse_products)
-                except (RuntimeError, TypeError, NameError):
-                    pass
 
-    # Check if this brand has any products on sale, if so, goes into the sale page and scrape, otherwise scrape
+# Check if this brand has any products on sale, if so, goes into the sale page and scrape, otherwise scrape
     def parse_products(self, response):
         # Scrape original product page
         next_page = response.css('div.product-image '
@@ -107,5 +113,3 @@ class NetAPorterSpider(scrapy.Spider):
                            .extract_first(default='Null')
 
         yield item
-
-
