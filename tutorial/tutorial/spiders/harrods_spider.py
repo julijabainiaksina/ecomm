@@ -38,11 +38,13 @@ class HarrodsSpider(scrapy.Spider):
         next_page = response.css('li.brand-az_list-group '
                                  'ul.brand-az_brands '
                                  'a.brand-az_brand-link::attr(href)').extract()
+        i = 0
         for links in next_page:
-            if links is not None:
+            i += 1
+            if links is not None and i == 21:
                 next_page_url = response.urljoin(links)
                 try:
-                    yield scrapy.Request(next_page_url, self.parse_category, dont_filter=True)
+                    yield scrapy.Request(next_page_url, self.parse_category)
                 except (RuntimeError, TypeError, NameError):
                     pass
 
@@ -64,12 +66,12 @@ class HarrodsSpider(scrapy.Spider):
 
     def parse_prd_pages(self, response):
         next_page_of_this = set(response.css('div.control_paging-list '
-                                             'a.control_paging-item::attr(href)').extract())
+                                             'a.control_paging-item.js-plp-control::attr(href)').extract())
 
-        if not next_page_of_this:
-            next_page_url = response.urljoin("")
-            yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
-        else:
+        next_page_url = response.urljoin("")
+        yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
+
+        if next_page_of_this:
             for links in next_page_of_this:
                 if links is not None:
                     next_page_url = response.urljoin(links)
@@ -84,7 +86,6 @@ class HarrodsSpider(scrapy.Spider):
         # Scrape original product page
         next_page = response.css('div.product-card_info '
                                  'a.product-card_link::attr(href)').extract()
-        print next_page
         for links in next_page:
             if links is not None:
                 try:
@@ -111,7 +112,7 @@ class HarrodsSpider(scrapy.Spider):
         item['harrods_id'] = response.css('div.buying-controls_prodID::text').extract_first(default='Null'),
         item['product_category'] = response.css('div.product-info_content '
                                                 'ul.product-info_list '
-                                                'a.product-info_item-link::text').extract()
+                                                'a.product-info_item-link::text').extract()[1]
 
         yield item
 
