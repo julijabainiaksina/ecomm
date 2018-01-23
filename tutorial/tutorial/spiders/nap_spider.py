@@ -9,7 +9,7 @@ from tutorial.items import ECommerceProductItem
 
 class NetAPorterSpider(scrapy.Spider):
     name = "nap"
-    other_urls = 'https://www.net-a-porter.com/Shop/Sale/AZDesigners'
+    # other_urls = 'https://www.net-a-porter.com/Shop/Sale/AZDesigners'
 
     # Define starting urls
     def start_requests(self):
@@ -43,29 +43,31 @@ class NetAPorterSpider(scrapy.Spider):
         next_page = response.css('div.designer_list_col '
                                  'li '
                                  'a::attr(href)').extract()
+        i = 0
         for links in next_page:
-            if links is not None:
+            i += 1
+            if links is not None and i == 27:
                 next_page_url = response.urljoin(links)
                 try:
                     yield scrapy.Request(next_page_url, self.parse_pages)
                 except (RuntimeError, TypeError, NameError):
                     pass
 
-        if self.other_urls:
-            yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
+        # if self.other_urls:
+        #     yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
 
     def parse_pages(self, response):
         next_page_of_this = set(response.css('div.pagination-links '
                                              'a::attr(href)').extract())
-        if not next_page_of_this:
-            next_page_url = response.urljoin("")
-            yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
-        else:
+        next_page_url = response.urljoin("")
+        yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
+        if next_page_of_this:
             for links in next_page_of_this:
                 if links is not None:
                     next_page_url = response.urljoin(links)
                     try:
-                        yield scrapy.Request(next_page_url, self.parse_products)
+                        print("TWO")
+                        yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
                     except (RuntimeError, TypeError, NameError):
                         pass
 
@@ -79,7 +81,7 @@ class NetAPorterSpider(scrapy.Spider):
             if links is not None:
                 next_page_url = response.urljoin(links)
                 try:
-                    yield scrapy.Request(next_page_url, self.parse_prd_details)
+                    yield scrapy.Request(next_page_url, self.parse_prd_details, dont_filter=True)
                 except (RuntimeError, TypeError, NameError):
                     pass
 
