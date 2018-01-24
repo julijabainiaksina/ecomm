@@ -38,10 +38,8 @@ class HarrodsSpider(scrapy.Spider):
         next_page = response.css('li.brand-az_list-group '
                                  'ul.brand-az_brands '
                                  'a.brand-az_brand-link::attr(href)').extract()
-        i = 0
         for links in next_page:
-            i += 1
-            if links is not None and i == 21:
+            if links is not None:
                 next_page_url = response.urljoin(links)
                 try:
                     yield scrapy.Request(next_page_url, self.parse_category)
