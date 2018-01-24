@@ -22,8 +22,8 @@ ITEM_PIPELINES = {
 
 MONGODB_SERVER = "localhost"
 MONGODB_PORT = 27017
-MONGODB_DB = "harrods"
-MONGODB_COLLECTION = "harrods_products"
+MONGODB_DB = "nap"
+MONGODB_COLLECTION = "nap_products"
 
 DOWNLOAD_DELAY = 0
 

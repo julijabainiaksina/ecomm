@@ -9,13 +9,12 @@ from tutorial.items import ECommerceProductItem
 
 class NetAPorterSpider(scrapy.Spider):
     name = "nap"
-    other_urls = 'https://www.net-a-porter.com/Shop/Sale/AZDesigners'
+    # other_urls = 'https://www.net-a-porter.com/Shop/Sale/AZDesigners'
 
     # Define starting urls
     def start_requests(self):
         log.msg('Starting Crawl!', level=log.INFO)
         url = 'https://www.net-a-porter.com/gb/en/Shop/AZDesigners?cm_sp=topnav-_-designers-_-topbar'
-
         tag = getattr(self, 'tag', None)
         if tag is not None:
             url = url + 'tag/' + tag
@@ -43,16 +42,18 @@ class NetAPorterSpider(scrapy.Spider):
         next_page = response.css('div.designer_list_col '
                                  'li '
                                  'a::attr(href)').extract()
+        i = 0
         for links in next_page:
-            if links is not None:
+            i += 1
+            if links is not None and i == 27:
                 next_page_url = response.urljoin(links)
                 try:
                     yield scrapy.Request(next_page_url, self.parse_pages)
                 except (RuntimeError, TypeError, NameError):
                     pass
-
-        if self.other_urls:
-            yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
+        #
+        # if self.other_urls:
+        #     yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
 
     def parse_pages(self, response):
         next_page_of_this = set(response.css('div.pagination-links '
@@ -62,6 +63,7 @@ class NetAPorterSpider(scrapy.Spider):
         if next_page_of_this:
             for links in next_page_of_this:
                 if links is not None:
+                    links = links.replace("../undefined", "/gb/en/d/Shop/Sale").replace("designerfilter=250&", "", 1)
                     next_page_url = response.urljoin(links)
                     try:
                         yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
