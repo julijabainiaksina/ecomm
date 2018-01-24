@@ -110,7 +110,7 @@ class HarrodsSpider(scrapy.Spider):
         item['harrods_id'] = response.css('div.buying-controls_prodID::text').extract_first(default='Null'),
         item['product_category'] = response.css('div.product-info_content '
                                                 'ul.product-info_list '
-                                                'a.product-info_item-link::text').extract()[1]
+                                                'a.product-info_item-link::text').extract()
 
         yield item
 
