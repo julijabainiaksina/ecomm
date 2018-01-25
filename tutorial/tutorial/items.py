@@ -21,7 +21,7 @@ class ECommerceProductItem(scrapy.Item):
 
     discount = scrapy.Field()
 
-    product_Price = scrapy.Field()
+    product_price = scrapy.Field()
 
     product_availability = scrapy.Field()
 

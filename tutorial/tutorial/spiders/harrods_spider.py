@@ -103,7 +103,7 @@ class HarrodsSpider(scrapy.Spider):
         item['designer_uni_name'] = re.sub(r'[^\w]', '', name).lower(),
         item['product_name'] = response.css('h1.buying-controls_title '
                                             'span.buying-controls_name::text').extract_first().strip(),
-        item['product_Price'] = response.css('div.price '
+        item['product_price'] = response.css('div.price '
                                              'span.price_amount::text').extract_first(default='Null'),
         item['product_description'] = response.css('div.product-info_content '
                                                    'p::text').extract_first(),

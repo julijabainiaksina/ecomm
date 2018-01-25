@@ -80,7 +80,7 @@ class FarfetchSpider(scrapy.Spider):
         item['designer_uni_name'] = re.sub(r'[^\w]', '', name).lower(),
         item['product_name'] = response.css('h1.detail-brand '
                                             'span.heading-regular::text').extract_first().strip(),
-        item['product_Price'] = float(response.css('script::text').re(r'unitSalePrice":(.*?)\,"unit')[0]),
+        item['product_price'] = float(response.css('script::text').re(r'unitSalePrice":(.*?)\,"unit')[0]),
         item['product_original_price'] = float(response.css('script::text').re(r'unitPrice":(.*?)\,"unit')[0]),
         item['discount'] = response.css('div.pdp-price '
                                         'span.discountprice.js-discount-label::text').extract_first()[1:],

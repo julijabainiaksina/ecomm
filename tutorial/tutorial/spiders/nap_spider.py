@@ -1,7 +1,4 @@
-import datetime
-import re
-
-import scrapy
+import datetime, json, scrapy, re
 from scrapy import log
 
 from tutorial.items import ECommerceProductItem
@@ -9,12 +6,24 @@ from tutorial.items import ECommerceProductItem
 
 class NetAPorterSpider(scrapy.Spider):
     name = "nap"
-    other_urls = 'https://www.net-a-porter.com/Shop/Sale/AZDesigners'
+    other_urls = ['https://www.net-a-porter.com/gb/en/d/Shop/Sale/Sport/All_Sportswear?cm_sp=topnav-_-sale-_-sport&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Lingerie/All?cm_sp=topnav-_-sale-_-lingerie&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Jewelry_and_Watches/All?cm_sp=topnav-_-sale-_-jewelry&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Accessories/All?cm_sp=topnav-_-sale-_-accessories&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Bags/All?cm_sp=topnav-_-sale-_-bags&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Shoes/All?cm_sp=topnav-_-sale-_-shoes&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Clothing/All?cm_sp=topnav-_-sale-_-clothing&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Clothing/All?cm_sp=topnav-_-clothing-_-allclothing&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Lingerie/All?cm_sp=topnav-_-lingerie-_-alllingerie&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Jewelry_and_Watches/All?cm_sp=topnav-_-jewelry-_-alljewelry&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Accessories/All?cm_sp=topnav-_-accessories-_-allaccessories&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Bags/All?cm_sp=topnav-_-bags-_-allbags&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Shoes/All?cm_sp=topnav-_-shoes-_-allshoes&pn=1&npp=60&image_view=product&dScroll=0']
 
     # Define starting urls
     def start_requests(self):
         log.msg('Starting Crawl!', level=log.INFO)
-        url = 'https://www.net-a-porter.com/gb/en/Shop/AZDesigners?cm_sp=topnav-_-designers-_-topbar'
+        url = 'https://www.net-a-porter.com/gb/en/Shop/AZDesigners?cm_sp=topnav-_-designers-_-seeall...'
         tag = getattr(self, 'tag', None)
         if tag is not None:
             url = url + 'tag/' + tag
@@ -39,34 +48,38 @@ class NetAPorterSpider(scrapy.Spider):
 
         yield item
 
-        next_page = response.css('div.designer_list_col '
-                                 'li '
-                                 'a::attr(href)').extract()
-        for links in next_page:
-            if links is not None:
-                next_page_url = response.urljoin(links)
-                try:
-                    yield scrapy.Request(next_page_url, self.parse_pages)
-                except (RuntimeError, TypeError, NameError):
-                    pass
-
         if self.other_urls:
-            yield scrapy.Request(url=self.other_urls, callback=self.parse_designers)
+            for links in self.other_urls:
+                yield scrapy.Request(url=links, callback=self.parse_pages)
 
     def parse_pages(self, response):
-        next_page_of_this = set(response.css('div.pagination-links '
-                                             'a::attr(href)').extract())
-        next_page_url = response.urljoin("")
-        yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
-        if next_page_of_this:
-            for links in next_page_of_this:
-                if links is not None:
-                    links = links.replace("../undefined", "/gb/en/d/Shop/Sale").replace("designerfilter=250&", "", 1)
-                    next_page_url = response.urljoin(links)
-                    try:
-                        yield scrapy.Request(next_page_url, self.parse_products, dont_filter=True)
-                    except (RuntimeError, TypeError, NameError):
-                        pass
+        page_list = response.css('div.pagination-links '
+                                 'a::text').extract()
+        page_url = response.css('div.pagination-links '
+                                'a::attr(href)').extract()
+        page_nums = []
+        # Convert unicode into num
+        for num in page_list:
+            page_nums.append(int(num))
+        page_num = (max(page_nums))
+
+        s = page_url[0]
+
+        i = 1
+        next_page_url = []
+        while i <= page_num:
+            page_link = s.replace(s[len(s) - 1], str(i))
+            url = response.urljoin(page_link)
+            path = url.decode('utf-8')
+            next_page_url.append(path)
+            i += 1
+
+        for links in next_page_url:
+            if links is not None:
+                try:
+                    yield scrapy.Request(links, self.parse_products, dont_filter=True)
+                except (RuntimeError, TypeError, NameError):
+                    pass
 
 
 # Check if this brand has any products on sale, if so, goes into the sale page and scrape, otherwise scrape
@@ -87,17 +100,29 @@ class NetAPorterSpider(scrapy.Spider):
         time = datetime.datetime.today()
         name = response.css('h1 '
                             'span::text').extract_first().strip()
+        # Get price
+        checkPrice = response.css('div.total-price nap-price::attr(price)').extract_first()
+        if checkPrice:
+            a = json.loads(checkPrice)
+        else:
+            a = json.loads(response.css('nap-price::attr(price)').extract_first())
 
+        # Get product name
+        checkName = response.css('h2.product-name::text').extract_first()
+        if checkName:
+            b = checkName
+        else:
+            b = response.css('div.details-container '
+                             'h2::text').extract_first()
+
+        # get all items
         item['date'] = time,
         item['designer_original_name'] = name,
         item['designer_uni_name'] = re.sub(r'[^\w]', '', name).lower(),
-        item['product_name'] = response.css('h2.product-name::text').extract_first().strip(),
-        item['product_Price'] = float(response.xpath('//form[@id=$val]/meta/@data-price-full', val='product-form')
-                                .extract_first())/100,
-        item['product_original_price'] = float(response.xpath('//form[@id=$val]/meta/@data-price', val='product-form')
-                                        .extract_first())/100,
-        item['discount'] = response.xpath('//form[@id=$val]/meta/@data-discount-percent', val='product-form')\
-                           .extract_first(default='0') + "% OFF",
+        item['product_name'] = b
+        item['product_price'] = a["amount"]/a["divisor"],
+        item['product_original_price'] = a["originalAmount"]/a["divisor"],
+        item['discount'] = str(a["discountPercent"]) + "% OFF",
         item['product_availability'] = response.xpath('//form[@id=$val]/meta/@data-sold-out', val='product-form')\
                            .extract_first(default='Null'),
         item['product_description'] = str(
