@@ -13,11 +13,11 @@ class NetAPorterSpider(scrapy.Spider):
                   'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Bags/All?cm_sp=topnav-_-sale-_-bags&pn=1&npp=60&image_view=product&dScroll=0',
                   'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Shoes/All?cm_sp=topnav-_-sale-_-shoes&pn=1&npp=60&image_view=product&dScroll=0',
                   'https://www.net-a-porter.com/gb/en/d/Shop/Sale/Clothing/All?cm_sp=topnav-_-sale-_-clothing&pn=1&npp=60&image_view=product&dScroll=0',
-                  'https://www.net-a-porter.com/gb/en/d/Shop/Clothing/All?cm_sp=topnav-_-clothing-_-allclothing&pn=1&npp=60&image_view=product&dScroll=0',
                   'https://www.net-a-porter.com/gb/en/d/Shop/Lingerie/All?cm_sp=topnav-_-lingerie-_-alllingerie&pn=1&npp=60&image_view=product&dScroll=0',
                   'https://www.net-a-porter.com/gb/en/d/Shop/Jewelry_and_Watches/All?cm_sp=topnav-_-jewelry-_-alljewelry&pn=1&npp=60&image_view=product&dScroll=0',
                   'https://www.net-a-porter.com/gb/en/d/Shop/Accessories/All?cm_sp=topnav-_-accessories-_-allaccessories&pn=1&npp=60&image_view=product&dScroll=0',
                   'https://www.net-a-porter.com/gb/en/d/Shop/Bags/All?cm_sp=topnav-_-bags-_-allbags&pn=1&npp=60&image_view=product&dScroll=0',
+                  'https://www.net-a-porter.com/gb/en/d/Shop/Clothing/All?cm_sp=topnav-_-clothing-_-allclothing&pn=1&npp=60&image_view=product&dScroll=0',
                   'https://www.net-a-porter.com/gb/en/d/Shop/Shoes/All?cm_sp=topnav-_-shoes-_-allshoes&pn=1&npp=60&image_view=product&dScroll=0']
 
     # Define starting urls
@@ -121,8 +121,9 @@ class NetAPorterSpider(scrapy.Spider):
         item['designer_uni_name'] = re.sub(r'[^\w]', '', name).lower(),
         item['product_name'] = b
         item['product_price'] = a["amount"]/a["divisor"],
-        item['product_original_price'] = a["originalAmount"]/a["divisor"],
-        item['discount'] = str(a["discountPercent"]) + "% OFF",
+        if(hasattr(a, 'originalAmount')):
+            item['product_original_price'] = a["originalAmount"]/a["divisor"],
+            item['discount'] = str(a["discountPercent"]) + "% OFF",
         item['product_availability'] = response.xpath('//form[@id=$val]/meta/@data-sold-out', val='product-form')\
                            .extract_first(default='Null'),
         item['product_description'] = str(
