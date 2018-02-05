@@ -1,13 +1,19 @@
 import datetime
 import re
-
 import scrapy
-
+from scrapy_splash import SplashRequest
 from tutorial.items import ECommerceProductItem
 
 
 class FarfetchSpider(scrapy.Spider):
     name = "ffetch"
+    other_urls= ['https://www.farfetch.com/uk/shopping/women/accessories-all-1/items.aspx',
+                 'https://www.farfetch.com/uk/shopping/women/clothing-1/items.aspx'
+                 'https://www.farfetch.com/uk/shopping/women/shoes-1/items.aspx',
+                 'https://www.farfetch.com/uk/shopping/women/bags-purses-1/items.aspx',
+                 'https://www.farfetch.com/uk/shopping/women/vintage-archive-1/items.aspx'
+                 'https://www.farfetch.com/uk/shopping/women/jewellery-1/items.aspx',
+                 'https://www.farfetch.com/uk/shopping/women/sale/all/items.aspx']
 
 # Define starting urls
     def start_requests(self):
@@ -29,19 +35,14 @@ class FarfetchSpider(scrapy.Spider):
 
         yield item
 
-        next_page = response.css('ul.list-regular '
-                                 'a.open-persistent-tooltip::attr(href)').extract()
-        for links in next_page:
-            if links is not None:
-                next_page_url = response.urljoin(links)
-                try:
-                    yield scrapy.Request(next_page_url, self.parse_prd_pages)
-                except (RuntimeError, TypeError, NameError):
-                    pass
+        if self.other_urls:
+            for links in self.other_urls:
+                yield scrapy.Request(url=links, callback=self.parse_pages)
 
-    def parse_prd_pages(self, response):
+    def parse_pages(self, response):
         page_num = int(response.css('span.js-lp-pagination-all::text').extract_first())
         i = 1
+        print(page_num)
         next_page_url = []
         while i <= page_num:
             page = "?page=" + str(i)
@@ -52,7 +53,7 @@ class FarfetchSpider(scrapy.Spider):
         for links in next_page_url:
             if links is not None:
                 try:
-                    yield scrapy.Request(links, self.parse_products)
+                    yield SplashRequest(links, self.parse_products, dont_filter=True)
                 except (RuntimeError, TypeError, NameError):
                     pass
 
@@ -65,15 +66,15 @@ class FarfetchSpider(scrapy.Spider):
                 if links is not None:
                     next_page_url = response.urljoin(links)
                     try:
-                        yield scrapy.Request(next_page_url, self.parse_prd_details)
+                        yield scrapy.Request(next_page_url, self.parse_prd_details, dont_filter=True)
                     except (RuntimeError, TypeError, NameError):
                         pass
 
     def parse_prd_details(self, response):
         item = ECommerceProductItem()
         time = datetime.datetime.today()
-        name = response.css('h1.detail-brand '
-                            'a::text').extract_first().strip()
+        name = str(response.css('h1._61cb2e '
+                            'span::text').extract_first())
 
         item['date'] = time,
         item['designer_original_name'] = name,
