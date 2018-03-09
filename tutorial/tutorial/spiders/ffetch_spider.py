@@ -7,11 +7,11 @@ from tutorial.items import ECommerceProductItem
 
 class FarfetchSpider(scrapy.Spider):
     name = "ffetch"
-    other_urls= ['https://www.farfetch.com/uk/shopping/women/accessories-all-1/items.aspx',
+    other_urls= ['https://www.farfetch.com/uk/shopping/women/shoes-1/items.aspx',
+                 'https://www.farfetch.com/uk/shopping/women/accessories-all-1/items.aspx',
                  'https://www.farfetch.com/uk/shopping/women/clothing-1/items.aspx'
-                 'https://www.farfetch.com/uk/shopping/women/shoes-1/items.aspx',
                  'https://www.farfetch.com/uk/shopping/women/bags-purses-1/items.aspx',
-                 'https://www.farfetch.com/uk/shopping/women/vintage-archive-1/items.aspx'
+                 'https://www.farfetch.com/uk/shopping/women/vintage-archive-1/items.aspx',
                  'https://www.farfetch.com/uk/shopping/women/jewellery-1/items.aspx',
                  'https://www.farfetch.com/uk/shopping/women/sale/all/items.aspx']
 
@@ -37,12 +37,11 @@ class FarfetchSpider(scrapy.Spider):
 
         if self.other_urls:
             for links in self.other_urls:
-                yield scrapy.Request(url=links, callback=self.parse_pages)
+                yield scrapy.Request(url=links, callback=self.parse_pages, dont_filter=True)
 
     def parse_pages(self, response):
         page_num = int(response.css('span.js-lp-pagination-all::text').extract_first())
         i = 1
-        print(page_num)
         next_page_url = []
         while i <= page_num:
             page = "?page=" + str(i)
@@ -71,10 +70,14 @@ class FarfetchSpider(scrapy.Spider):
                         pass
 
     def parse_prd_details(self, response):
+        # page = response.url.split("/")[-2]
+        # filename = 'details-%s.html' % page
+        # with open(filename, 'wb') as f:
+        #     f.write(response.body)
         item = ECommerceProductItem()
         time = datetime.datetime.today()
-        name = str(response.css('h1._61cb2e '
-                            'span::text').extract_first())
+        name = str(response.css('h1 '
+                                'a::text').extract())
 
         item['date'] = time,
         item['designer_original_name'] = name,
